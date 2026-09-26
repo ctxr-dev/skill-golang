@@ -132,8 +132,8 @@ the release tag, because review links are built from it.
       produces a doc comment on the exported function and no other comment.
 - [ ] Review mode: four named defects in a fixture produce four matched findings, the SQL one a
       blocker, every finding carrying a tagged link, and a run directory on disk.
-- [ ] Companion detection: active, skill-only and absent; onboarding directories for two repositories
-      at different paths; both repositories left untouched.
+- [ ] Companion detection: active, skill-only, rule-only and absent; onboarding directories for two
+      repositories at different paths; both repositories left untouched.
 - [ ] Precedence at both ends: a repository standard overriding one topic, and the in-context rung 0.
 - [ ] `git log --format='%an %ae' | sort -u` returns one line.
 

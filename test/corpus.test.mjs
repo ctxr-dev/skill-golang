@@ -25,7 +25,7 @@ const RULE_ID = /^[a-z0-9]+(-[a-z0-9]+)+$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const GO_VERSION = /^1\.(25|26)$/;
 const LINE_REFERENCE = /#L\d+|\b(?:at |on )?lines? \d+\b|\.(?:go|md|yml|yaml|mjs|json):\d+/g;
-const CODE_SUBJECTS = ['architecture', 'data', 'languages', 'observability', 'security', 'testing'];
+const AREAS_WITHOUT_GO = ['onboarding', 'review', 'tooling'];
 
 const COPY_VECTORS = [
   'npx skills add samber',
@@ -122,9 +122,9 @@ test('every rule states the rule, the reason, the catcher and its sources', () =
   }
 });
 
-test('every rule shows a worked example, in Go wherever the subject is code', () => {
+test('every rule shows a worked example, in Go unless its area is exempt by name', () => {
   for (const area of corpus()) {
-    const needsGo = area.subject.some((subject) => CODE_SUBJECTS.includes(subject));
+    const needsGo = !AREAS_WITHOUT_GO.includes(area.id);
     for (const section of area.sections) {
       const where = `${section.area}.md#${section.id}`;
       for (const marker of BLOCK_MARKERS) {
@@ -135,9 +135,15 @@ test('every rule shows a worked example, in Go wherever the subject is code', ()
         assert.ok(fence.lang.length > 0, `${where}: a fenced block declares no language`);
       }
       if (needsGo) {
-        assert.ok(section.goBlocks.length >= 1, `${where}: no go block, in a ${area.subject.join('/')} area`);
+        assert.ok(section.goBlocks.length >= 1, `${where}: no go block, and ${area.id} is not exempt`);
       }
     }
+  }
+  for (const exempt of AREAS_WITHOUT_GO) {
+    assert.ok(
+      corpus().some((area) => area.id === exempt),
+      `the exemption list names ${exempt}, which is not an area`,
+    );
   }
 });
 

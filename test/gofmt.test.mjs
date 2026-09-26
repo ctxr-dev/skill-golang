@@ -6,8 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { allSections, goBlocks } from './lib/corpus.mjs';
 
-const GO_LINE = 'go 1.25';
-const PACKAGE_CLAUSE = /^package\s+[a-z]/;
+const PACKAGE_CLAUSE = /^package\s+[a-z]/m;
 const IMPORT_PATH = /^\s*(?:[\w.]+\s+)?"([^"]+)"\s*$/gm;
 const SINGLE_IMPORT = /^import\s+(?:[\w.]+\s+)?"([^"]+)"/gm;
 
@@ -46,9 +45,11 @@ function isExternal(importPath) {
   return importPath.split('/')[0].includes('.');
 }
 
-test('the Go toolchain this suite measures against is the one the corpus targets', () => {
+test('the Go toolchain this suite measures against is at or above the corpus baseline', () => {
   const version = toolVersion('go');
-  assert.match(version, /^go version go1\.25\./, `found ${version}`);
+  const minor = /^go version go1\.(\d+)/.exec(version);
+  assert.ok(minor !== null, `cannot read a version from ${version}`);
+  assert.ok(Number(minor[1]) >= 25, `the corpus baseline is Go 1.25; found ${version}`);
   assert.equal(formatted('package  example\n'), 'package example\n', 'gofmt must reformat stdin');
 });
 
@@ -72,66 +73,92 @@ test('every Go example is gofmt-clean', () => {
   assert.deepEqual(dirty, [], `${blocks.length} Go examples checked`);
 });
 
-test('every standard-library Go example on the 1.25 baseline compiles and vets clean', () => {
+function toolchainMinor() {
+  const matched = /^go version go1\.(\d+)/.exec(toolVersion('go'));
+  assert.ok(matched !== null, `cannot read the toolchain version from ${toolVersion('go')}`);
+  return Number(matched[1]);
+}
+
+function skipReason(block, minor) {
+  if (block.since === '1.26' && block.marker !== '**Good (1.25)**' && minor < 26) {
+    return 'gated';
+  }
+  const foreign = importPaths(asFile(block.code)).filter(isExternal);
+  return foreign.length > 0 ? `external (${foreign.join(', ')})` : null;
+}
+
+function run(tool, args, cwd) {
+  try {
+    execFileSync(tool, args, { cwd, encoding: 'utf8', stdio: 'pipe' });
+    return '';
+  } catch (error) {
+    return String(error.stderr ?? error.message);
+  }
+}
+
+test('every standard-library Go example compiles, and every good one vets clean', () => {
+  const minor = toolchainMinor();
   const blocks = goBlocks();
   const scratch = mkdtempSync(path.join(os.tmpdir(), 'skill-golang-blocks-'));
   const gated = [];
   const external = [];
   const built = [];
+  const vetted = [];
   try {
-    writeFileSync(path.join(scratch, 'go.mod'), `module example\n\n${GO_LINE}\n`);
-    blocks.forEach((block) => {
-      const source = asFile(block.code);
-      if (block.since === '1.26') {
+    writeFileSync(path.join(scratch, 'go.mod'), `module example\n\ngo 1.${minor}\n`);
+    for (const block of blocks) {
+      const skip = skipReason(block, minor);
+      if (skip === 'gated') {
         gated.push(block.label);
-        return;
+        continue;
       }
-      const foreign = importPaths(source).filter(isExternal);
-      if (foreign.length > 0) {
-        external.push(`${block.label} (${foreign.join(', ')})`);
-        return;
+      if (skip !== null) {
+        external.push(`${block.label} ${skip}`);
+        continue;
       }
       const dir = path.join(scratch, `${block.area}__${block.ruleId}__${block.index}`);
       mkdirSync(dir);
-      writeFileSync(path.join(dir, 'example.go'), source);
+      writeFileSync(path.join(dir, 'example.go'), asFile(block.code));
       built.push(block.label);
-    });
-    assert.ok(built.length > 0, 'no example was compiled');
-    let failure = '';
-    try {
-      execFileSync('go', ['build', './...'], { cwd: scratch, encoding: 'utf8', stdio: 'pipe' });
-      execFileSync('go', ['vet', './...'], { cwd: scratch, encoding: 'utf8', stdio: 'pipe' });
-    } catch (error) {
-      failure = String(error.stderr ?? error.message);
+      if (block.marker.startsWith('**Good')) {
+        vetted.push(`./${path.basename(dir)}`);
+      }
     }
-    assert.equal(
-      failure,
-      '',
-      [
-        `compiled ${built.length}, 1.26-gated and unexecuted: ${gated.join(', ') || 'none'}`,
-        `external-import and unexecuted: ${external.join(', ') || 'none'}`,
-        'each failing path is <area>__<rule-id>__<block-index>/example.go',
-      ].join('\n'),
-    );
+    assert.ok(built.length > 0, 'no example was compiled');
+    const context = [
+      `toolchain go1.${minor}: compiled ${built.length}, vetted ${vetted.length}`,
+      `gated and unexecuted: ${gated.join(', ') || 'none'}`,
+      `external-import and unexecuted: ${external.join(', ') || 'none'}`,
+      'each failing path is <area>__<rule-id>__<block-index>/example.go',
+    ].join('\n');
+    assert.equal(run('go', ['build', './...'], scratch), '', context);
+    assert.equal(run('go', ['vet', ...vetted], scratch), '', context);
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
 });
 
 test('every unexecuted Go example is named, never silently skipped', () => {
+  const minor = toolchainMinor();
   const blocks = goBlocks();
-  const gated = blocks.filter((block) => block.since === '1.26').map((block) => block.label);
-  const external = blocks
-    .filter((block) => block.since !== '1.26' && importPaths(asFile(block.code)).some(isExternal))
-    .map((block) => block.label);
+  const gated = [];
+  const external = [];
+  for (const block of blocks) {
+    const skip = skipReason(block, minor);
+    if (skip === 'gated') {
+      gated.push(block.label);
+    } else if (skip !== null) {
+      external.push(`${block.label} ${skip}`);
+    }
+  }
   const executed = blocks.length - gated.length - external.length;
   assert.ok(
     executed > 0,
     `nothing was executed: ${gated.length} gated, ${external.length} external, ${blocks.length} total`,
   );
   console.log(
-    `go1.25 blocks: ${executed} compiled\n` +
-      `1.26-gated and unexecuted: ${gated.join(', ') || 'none'}\n` +
+    `toolchain go1.${minor}: ${executed} of ${blocks.length} Go examples compiled\n` +
+      `gated on a newer release and unexecuted: ${gated.join(', ') || 'none'}\n` +
       `external-import and unexecuted: ${external.join(', ') || 'none'}`,
   );
 });

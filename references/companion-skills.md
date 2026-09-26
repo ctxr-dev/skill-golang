@@ -86,7 +86,7 @@ Prompt **only** when all of these hold:
 
 Otherwise record the result and move on silently.
 
-When the gate is open and a companion is absent or skill-only:
+When the gate is open and a companion is anything but **active**:
 
 1. Fetch `https://raw.githubusercontent.com/ctxr-dev/<name>/main/README.md` for current install
    instructions. On failure, name the two repository URLs and say live instructions could not be

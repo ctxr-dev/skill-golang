@@ -145,9 +145,13 @@ maps to a named rule, and `test/config.test.mjs` fails if one does not.
 
 **M1. Companion detection reads the lockfile, then looks for a body.** `~/.agents/.skill-lock.json`
 first; then the named `SKILL.md` must exist and be non-empty; then the rule locations are probed and
-the file must have a non-empty body below its frontmatter. Reported as **active**, **skill-only** or
-**absent**. A directory existing is never evidence — two companion directories on the development
-machine are empty.
+the file must have a non-empty body below its frontmatter. Reported as **active**, **skill-only**,
+**rule-only** or **absent**. A directory existing is never evidence — two companion directories on
+the development machine are empty.
+
+The fourth state, **rule-only**, was added after the behavioural verification: the rule and the skill
+install by separate commands, so someone can `curl` the rule and never run the installer. That rule
+still binds the session, and a three-state table had nowhere to put it.
 
 **M2. The README is fetched only when a human will see the result.** When a companion is missing and
 the prompt gate is open, fetch its README for current install instructions. Never on the common path,

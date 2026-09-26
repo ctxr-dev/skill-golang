@@ -119,14 +119,19 @@ function fencesIn(sectionText) {
   const lines = sectionText.split('\n');
   const blocks = [];
   let current = null;
+  let marker = '';
   for (const line of lines) {
+    const heading = /^\*\*(Good[^*]*|Bad[^*]*)\*\*$/.exec(line.trim());
+    if (current === null && heading) {
+      marker = `**${heading[1]}**`;
+    }
     const opening = OPEN_FENCE.exec(line);
     if (current === null && opening) {
-      current = { lang: opening[1] ?? '', code: [] };
+      current = { lang: opening[1] ?? '', marker, code: [] };
       continue;
     }
     if (current !== null && FENCE.test(line)) {
-      blocks.push({ lang: current.lang, code: current.code.join('\n') });
+      blocks.push({ lang: current.lang, marker: current.marker, code: current.code.join('\n') });
       current = null;
       continue;
     }
@@ -213,15 +218,18 @@ export function allSections() {
 
 export function goBlocks() {
   return allSections().flatMap((section) =>
-    section.goBlocks.map((code, index) => ({
-      area: section.area,
-      ruleId: section.id,
-      file: section.file,
-      index,
-      since: section.since,
-      code,
-      label: `${section.area}.md#${section.id}[${index}]`,
-    })),
+    section.fences
+      .filter((fence) => fence.lang === 'go')
+      .map((fence, index) => ({
+        area: section.area,
+        ruleId: section.id,
+        file: section.file,
+        index,
+        since: section.since,
+        marker: fence.marker,
+        code: fence.code,
+        label: `${section.area}.md#${section.id}[${index}]`,
+      })),
   );
 }
 
