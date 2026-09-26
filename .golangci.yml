@@ -1,0 +1,30 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - contextcheck
+    - cyclop
+    - errcheck
+    - funlen
+    - gocognit
+    - govet
+    - ineffassign
+    - revive
+    - staticcheck
+    - unused
+  settings:
+    cyclop:
+      max-complexity: 20
+    funlen:
+      lines: 60
+      statements: 40
+    gocognit:
+      min-complexity: 20
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+formatters:
+  enable:
+    - gofmt
