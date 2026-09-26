@@ -12,19 +12,46 @@ Homes: `https://github.com/ctxr-dev/no-comments` and `https://github.com/ctxr-de
 
 ## Detection
 
-Three states per companion: **active**, **skill-only**, **absent**. Run these steps in order and stop
-at the first that settles the answer.
+Four states per companion: **active**, **skill-only**, **rule-only**, **absent**. Run these steps in
+order.
 
 1. **Read `~/.agents/.skill-lock.json`.** It is the installer's own record. Each entry holds
    `source`, `sourceType`, `sourceUrl`, `skillPath`, `skillFolderHash`, `installedAt` and
-   `updatedAt`. No entry for the companion means it was not installed by the skills CLI.
-2. **Open the `skillPath` the lockfile names.** The `SKILL.md` there must exist and be non-empty. If
-   it is missing or empty, report **absent**, whatever the lockfile said.
-3. **Look for the rule.** Check, in order, `~/.claude/rules/`, `~/.omp/agent/rules/`,
-   `~/.agents/rules/`, `.cursor/rules/`, `.windsurf/rules/`, and the skill folder's own `rules/`.
-   The file must have a **non-empty body below its frontmatter**. Frontmatter alone is not a rule.
-4. **Decide.** Skill body and rule body → **active**. Skill body, no rule body → **skill-only**.
-   Neither → **absent**.
+   `updatedAt`. No entry for the companion means the skills CLI did not install it.
+2. **Open the skill.** Resolve `skillPath` three ways, because installers write it three ways:
+   - relative (`SKILL.md`) → resolve against `~/.agents/skills/<name>/`
+   - absolute and naming a file → use it as it stands
+   - absolute and naming a directory → append `SKILL.md`
+
+   With no lockfile entry, try `~/.agents/skills/<name>/SKILL.md` directly. The file must exist and
+   be non-empty. A path that resolves to nothing is no skill body, whatever the lockfile said.
+3. **Look for the rule.** Probe every location below, in this order, and keep looking after the
+   first hit — several can hold a live rule, and their text can differ.
+
+   | Location | File |
+   |---|---|
+   | `~/.claude/rules/` | `<name>.md` |
+   | `~/.omp/agent/rules/` | `<name>.md` |
+   | `~/.agents/rules/` | `<name>.md` |
+   | `<repo>/.cursor/rules/` | `<name>.mdc` |
+   | `<repo>/.windsurf/rules/` | `<name>.md` |
+   | `~/.agents/skills/<name>/rules/` | `<name>.md` |
+
+   A hit needs a **non-empty body below the frontmatter**. Frontmatter alone is not a rule. Record
+   every hit in `evidence.ruleHits`, with its byte count; the first one is the one you name in
+   `rulePath`. Cursor uses `.mdc`, so a probe for `.md` there misses a real, live rule.
+4. **Decide.**
+
+   | Skill body | Rule body | State |
+   |---|---|---|
+   | yes | yes | **active** |
+   | yes | no | **skill-only** |
+   | no | yes | **rule-only** |
+   | no | no | **absent** |
+
+   **rule-only** means the rule binds this session even though the skill is not installed, so apply
+   it and offer the skill. It happens when someone installs the rule by `curl` and never runs
+   `npx skills add`.
 
 ### Why step 3 checks for a body
 
@@ -84,12 +111,24 @@ repository being worked on**, so no `.gitignore` entry is needed and this skill 
 
 `<repo-normalized-path>` is the repository root's absolute path with the leading `/` dropped and
 every remaining `/` replaced by `-`. `/Users/dev/projects/billing` becomes
-`Users-dev-projects-billing`. The repository root is `git rev-parse --show-toplevel`; outside a git
-repository, use the working directory and record it the same way.
+`Users-dev-projects-billing`.
+
+**The root is whatever `git rev-parse --show-toplevel` prints**, with no further processing. That
+command resolves symlinks, so on macOS a repository under `/tmp` comes back as `/private/tmp/...`
+and normalises to `private-tmp-...`. Use what git printed. Rewriting it back to the path you typed
+produces two directories for one repository. Outside a git repository, use `pwd -P` and record it
+the same way.
 
 Two different paths can normalise to one name — `/a/b-c` and `/a-b/c` both give `a-b-c` — so the file
 records the exact path in `repoPath`. On read, a `repoPath` that does not equal the current
 repository root is a miss, and the file is overwritten.
+
+**Reading an existing file.** A file whose `repoPath` matches and whose `checkedAt` is within
+`ttlDays` is a hit: use it and skip detection entirely. Past the TTL, or on a `repoPath` mismatch,
+detect again and overwrite the whole file. Never merge an old result into a new one — a companion
+uninstalled since the last run must stop being reported as active.
+
+**Every path in the file is absolute and openable.** Do not abbreviate a home directory to `~`.
 
 ```json
 {
@@ -104,13 +143,17 @@ repository root is a miss, and the file is overwritten.
       "whyItMattersHere": "This skill requires doc comments on exported Go API and bans every other comment. no-comments enforces the second half in every language.",
       "whereToGetIt": "https://github.com/ctxr-dev/no-comments",
       "installCommand": "npx skills add ctxr-dev/no-comments",
-      "ruleInstall": "the block for the detected client, verbatim",
+      "ruleInstall": null,
       "observedAt": "2026-10-01T12:00:00Z",
       "evidence": {
-        "lockfileEntry": "~/.agents/.skill-lock.json",
-        "skillPath": "~/.agents/skills/no-comments/SKILL.md",
-        "rulePath": "~/.claude/rules/no-comments.md",
-        "ruleBodyBytes": 3110
+        "lockfileEntry": "/Users/dev/.agents/.skill-lock.json",
+        "skillPath": "/Users/dev/.agents/skills/no-comments/SKILL.md",
+        "rulePath": "/Users/dev/.claude/rules/no-comments.md",
+        "ruleBodyBytes": 3110,
+        "ruleHits": [
+          { "path": "/Users/dev/.claude/rules/no-comments.md", "bodyBytes": 3110 },
+          { "path": "/Users/dev/.omp/agent/rules/no-comments.md", "bodyBytes": 3111 }
+        ]
       }
     },
     "simple-language": {
@@ -119,21 +162,27 @@ repository root is a miss, and the file is overwritten.
       "whyItMattersHere": "Review findings and doc comments are read by people in a hurry.",
       "whereToGetIt": "https://github.com/ctxr-dev/simple-language",
       "installCommand": "npx skills add ctxr-dev/simple-language",
-      "ruleInstall": "the block for the detected client, verbatim",
+      "ruleInstall": "mkdir -p ~/.claude/rules\ncurl -fsSL https://raw.githubusercontent.com/ctxr-dev/simple-language/main/rules/simple-language.md -o ~/.claude/rules/simple-language.md",
       "observedAt": "2026-10-01T12:00:00Z",
       "evidence": {
         "lockfileEntry": null,
         "skillPath": null,
         "rulePath": null,
-        "ruleBodyBytes": 0
+        "ruleBodyBytes": 0,
+        "ruleHits": []
       }
     }
   }
 }
 ```
 
-Past `ttlDays`, detect again rather than trusting the cache. A companion uninstalled since the last
-run must stop being reported as active.
+`ruleInstall` holds the block you actually showed the user, verbatim. It is `null` when nothing was
+shown — because the companion was already active, or because the prompt gate was closed. Never
+invent a block for the field.
+
+`ruleHits` lists every location holding a live rule, in probe order. Two can disagree, as the
+example shows, and the agent cannot tell from the file alone which text its session loaded. Listing
+both is what makes that visible.
 
 ## What changes when they are active
 

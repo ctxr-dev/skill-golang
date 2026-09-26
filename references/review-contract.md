@@ -31,8 +31,17 @@ https://github.com/ctxr-dev/skill-golang/blob/v<metadata.version>/corpus/<area>.
 ```
 
 `<metadata.version>` is read from this skill's own `SKILL.md` frontmatter, so the link points at the
-text the reviewer actually read. If no tag has been pushed for that version, fall back to
-`blob/main` and say in the report that the reference is unpinned.
+text the reviewer actually read.
+
+Confirm the tag exists before you write the report:
+
+```bash
+git ls-remote --tags https://github.com/ctxr-dev/skill-golang refs/tags/v<version>
+```
+
+Nothing printed means no such tag: link `blob/main` instead and say in the report that the reference
+is unpinned. No network means the version link stands, and the report carries one line saying the
+tag was not confirmed.
 
 Never link to a line. The skills installer records a folder hash, not a commit, and the report
 persists on disk where a line number would rot.

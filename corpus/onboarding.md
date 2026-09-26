@@ -17,25 +17,33 @@ and which of the two modes it is in.
 - atom_type: decision
 
 **Rule.** Once per repository, detect the two companion skills, then carry on whatever the result.
-Read `~/.agents/.skill-lock.json`, confirm the `skillPath` it names holds a non-empty `SKILL.md`,
-then probe the rule locations and require a non-empty body below the frontmatter. Report **active**,
-**skill-only** or **absent**. Neither companion blocks any work.
+Read `~/.agents/.skill-lock.json`, resolve the `skillPath` it names and confirm that `SKILL.md` is
+non-empty, then probe every rule location and require a non-empty body below the frontmatter. Report
+**active**, **skill-only**, **rule-only** or **absent**. The full procedure, with the path-resolution
+forms and the per-location file names, is in `references/companion-skills.md`. Neither companion
+blocks any work.
 
 **Why.** A directory existing proves nothing. The documented rule install is a shell redirect that
 truncates the destination before `curl` writes to it, and `curl -f` prints nothing on an HTTP error,
 so a soft failure leaves a file holding frontmatter and no rule. Two companion directories on a
 machine checked for this were empty. Detection that stops at "the path exists" reports a rule as
-live in a session that never loaded it.
+live in a session that never loaded it. The fourth state exists because the rule and the skill
+install separately: someone can `curl` the rule and never run the installer, and that rule still
+binds the session.
 
 **Good**
 
 ```text
-~/.agents/.skill-lock.json names no-comments  -> skillPath has a 3 KB SKILL.md
-~/.claude/rules/no-comments.md                -> 3110 bytes below the frontmatter
+lockfile names no-comments -> skillPath holds a 13 KB SKILL.md
+~/.claude/rules/no-comments.md -> 3110 bytes below the frontmatter
 state: active
 
-~/.claude/skills/simple-language/             -> directory exists, 0 files
-~/.agents/.skill-lock.json                    -> no entry
+lockfile names simple-language -> skillPath holds a 38 KB SKILL.md
+~/.claude/rules/simple-language.md -> frontmatter only, 0 bytes of body
+state: skill-only
+
+lockfile has no entry -> no SKILL.md anywhere
+~/.claude/skills/no-comments/ -> directory exists, 0 files
 state: absent
 ```
 
@@ -43,11 +51,12 @@ state: absent
 
 ```text
 ~/.claude/skills/no-comments/ exists -> state: active
+~/.claude/rules/no-comments.md exists -> state: active
 ```
 
-**Caught by.** Nothing automated. The review of this skill checks the three states by hand against a
-temp root holding an empty skill directory and a rule file with frontmatter and no body, which are
-the two false positives seen in the wild.
+**Caught by.** Nothing automated. The review of this skill runs the handshake by hand against a temp
+root holding an empty skill directory and a rule file with frontmatter and no body, which are the
+two false positives seen in the wild, and confirms neither comes back active.
 
 **Sources.** https://github.com/ctxr-dev/no-comments and https://github.com/ctxr-dev/simple-language
 

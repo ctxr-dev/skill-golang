@@ -40,8 +40,9 @@ follows the corpus" is the shape. Never discard the corpus because the organisat
 ## Before you start
 
 Run the companion handshake once per repository: `references/companion-skills.md`. It detects
-`no-comments` and `simple-language`, reports **active**, **skill-only** or **absent**, and tells the
-user what is missing when a human is there to read it. Neither companion blocks any work.
+`no-comments` and `simple-language`, reports **active**, **skill-only**, **rule-only** or
+**absent**, and tells the user what is missing when a human is there to read it. Neither companion
+blocks any work.
 
 The result is kept at `~/.skill-golang/onboarding/<repo-normalized-path>/onboarding.json`. Nothing is
 ever written inside the repository you are working on.

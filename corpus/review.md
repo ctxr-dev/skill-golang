@@ -124,7 +124,10 @@ repository under review has no new or modified file after the review ran.
 
 **Rule.** Every finding links to the rule that justifies it, at this skill's own version tag:
 `<homepage>/blob/v<version>/corpus/<area>.md#<rule-id>`, where `<version>` is the `metadata.version`
-in `SKILL.md`. With no tag pushed, link `blob/main` and say in the report that the ref is unpinned. A
+in `SKILL.md`. Confirm the tag exists with
+`git ls-remote --tags <homepage> refs/tags/v<version>`. Nothing printed means no such tag, so link
+`blob/main` instead and say in the report that the reference is unpinned. No network to run the
+check means the version link stands, with one line in the report saying the tag was not confirmed. A
 finding with no rule behind it is a nit, and it says so in the same line.
 
 **Why.** The version tag is the only ref that provably matches the text the reviewer read. The skills
