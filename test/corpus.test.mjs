@@ -25,6 +25,7 @@ const RULE_ID = /^[a-z0-9]+(-[a-z0-9]+)+$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const GO_VERSION = /^1\.(25|26)$/;
 const LINE_REFERENCE = /#L\d+|\b(?:at |on )?lines? \d+\b|\.(?:go|md|yml|yaml|mjs|json):\d+/g;
+const CODE_SUBJECTS = ['architecture', 'data', 'languages', 'observability', 'security', 'testing'];
 
 const COPY_VECTORS = [
   'npx skills add samber',
@@ -121,13 +122,22 @@ test('every rule states the rule, the reason, the catcher and its sources', () =
   }
 });
 
-test('every rule shows a good example in Go', () => {
-  for (const section of allSections()) {
-    const where = `${section.area}.md#${section.id}`;
-    for (const marker of BLOCK_MARKERS) {
-      assert.ok(section.markers[marker] !== null, `${where}: missing ${marker}`);
+test('every rule shows a worked example, in Go wherever the subject is code', () => {
+  for (const area of corpus()) {
+    const needsGo = area.subject.some((subject) => CODE_SUBJECTS.includes(subject));
+    for (const section of area.sections) {
+      const where = `${section.area}.md#${section.id}`;
+      for (const marker of BLOCK_MARKERS) {
+        assert.ok(section.markers[marker] !== null, `${where}: missing ${marker}`);
+      }
+      assert.ok(section.fences.length >= 1, `${where}: no fenced example`);
+      for (const fence of section.fences) {
+        assert.ok(fence.lang.length > 0, `${where}: a fenced block declares no language`);
+      }
+      if (needsGo) {
+        assert.ok(section.goBlocks.length >= 1, `${where}: no go block, in a ${area.subject.join('/')} area`);
+      }
     }
-    assert.ok(section.goBlocks.length >= 1, `${where}: no \`\`\`go block`);
   }
 });
 

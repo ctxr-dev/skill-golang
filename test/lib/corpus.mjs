@@ -35,7 +35,7 @@ const FRONTMATTER_LINE = /^([a-z_]+):\s*(.*)$/;
 const META_LINE = /^- (priority|atom_type|since):\s*(\S+)\s*$/;
 const HEADING = /^## (\S+)\s*$/;
 const FENCE = /^```/;
-const GO_FENCE = /^```go\s*$/;
+const OPEN_FENCE = /^```([a-z]*)\s*$/;
 const RULE_REFERENCE = /`rule:([a-z0-9][a-z0-9-]*)`/g;
 const MARKDOWN_LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
 
@@ -115,26 +115,27 @@ function markerBody(sectionText, marker) {
   return (next === undefined ? rest : rest.slice(0, next)).trim();
 }
 
-function goBlocksIn(sectionText) {
+function fencesIn(sectionText) {
   const lines = sectionText.split('\n');
   const blocks = [];
   let current = null;
   for (const line of lines) {
-    if (current === null && GO_FENCE.test(line)) {
-      current = [];
+    const opening = OPEN_FENCE.exec(line);
+    if (current === null && opening) {
+      current = { lang: opening[1] ?? '', code: [] };
       continue;
     }
     if (current !== null && FENCE.test(line)) {
-      blocks.push(current.join('\n'));
+      blocks.push({ lang: current.lang, code: current.code.join('\n') });
       current = null;
       continue;
     }
     if (current !== null) {
-      current.push(line);
+      current.code.push(line);
     }
   }
   if (current !== null) {
-    throw new Error('unclosed go fence');
+    throw new Error('unclosed code fence');
   }
   return blocks;
 }
@@ -153,11 +154,11 @@ function parseSection(file, areaId, lines, start, end) {
       meta[pair[1]] = pair[2];
     }
   }
-  let blocks;
+  let fences;
   try {
-    blocks = goBlocksIn(text);
+    fences = fencesIn(text);
   } catch {
-    throw new Error(`${rel(file)}#${id}: unclosed go code fence`);
+    throw new Error(`${rel(file)}#${id}: unclosed code fence`);
   }
   const references = [...text.matchAll(RULE_REFERENCE)].map((match) => match[1]);
   return {
@@ -168,7 +169,8 @@ function parseSection(file, areaId, lines, start, end) {
     atomType: meta.atom_type,
     since: meta.since,
     text,
-    goBlocks: blocks,
+    fences,
+    goBlocks: fences.filter((fence) => fence.lang === 'go').map((fence) => fence.code),
     references,
     markers: Object.fromEntries(
       [...INLINE_MARKERS, ...BLOCK_MARKERS, '**Bad**'].map((marker) => [marker, markerBody(text, marker)]),

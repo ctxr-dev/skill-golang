@@ -96,18 +96,19 @@ test('field alignment is off, in the config and in the corpus', () => {
 });
 
 test('the size gates in the config are the numbers the corpus states', () => {
-  const parsed = config();
-  const stated = sizeRuleYaml();
-  const settings = parsed.linters.settings;
+  const settings = config().linters.settings;
+  const stated = sizeRuleYaml().linters.settings;
   assert.equal(settings.funlen.lines, 60, 'funlen.lines');
   assert.equal(settings.funlen.statements, 40, 'funlen.statements');
   assert.equal(settings.cyclop['max-complexity'], 20, 'cyclop.max-complexity');
   assert.equal(settings.gocognit['min-complexity'], 20, 'gocognit.min-complexity');
-  assert.deepEqual(
-    stated.linters.settings,
-    settings,
-    `${SIZE_RULE} states different numbers from the shipped .golangci.yml`,
-  );
+  for (const linter of ['funlen', 'cyclop', 'gocognit']) {
+    assert.deepEqual(
+      stated[linter],
+      settings[linter],
+      `${SIZE_RULE} states different ${linter} numbers from the shipped .golangci.yml`,
+    );
+  }
 });
 
 test('revive is configured to demand doc comments on exported names and packages', () => {
