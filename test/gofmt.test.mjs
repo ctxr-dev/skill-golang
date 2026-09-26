@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { goBlocks } from './lib/corpus.mjs';
+import { allSections, goBlocks } from './lib/corpus.mjs';
 
 const GO_LINE = 'go 1.25';
 const PACKAGE_CLAUSE = /^package\s+[a-z]/;
@@ -134,4 +134,14 @@ test('every unexecuted Go example is named, never silently skipped', () => {
       `1.26-gated and unexecuted: ${gated.join(', ') || 'none'}\n` +
       `external-import and unexecuted: ${external.join(', ') || 'none'}`,
   );
+});
+
+test('every rule gated on Go 1.26 tells the reader what to do on 1.25', () => {
+  const silent = allSections()
+    .filter((section) => section.since === '1.26')
+    .filter((section) => !section.text.includes('1.25'))
+    .map((section) => `${section.area}.md#${section.id}`);
+  const gatedCount = allSections().filter((section) => section.since === '1.26').length;
+  assert.ok(gatedCount > 0, 'no rule is gated on 1.26, so this check proves nothing');
+  assert.deepEqual(silent, [], `${gatedCount} rules are gated on Go 1.26`);
 });

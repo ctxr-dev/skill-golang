@@ -213,7 +213,7 @@ so.
 ## Maintaining it
 
 ```bash
-node --test test/
+node --test
 ```
 
 Four zero-dependency `node:test` suites, no `package.json`. They check the corpus structure, that

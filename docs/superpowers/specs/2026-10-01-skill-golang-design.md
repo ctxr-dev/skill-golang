@@ -203,7 +203,8 @@ readability. Decisions G6, G4, G2 and G10 resolve those.
 
 Its appendix reproduced a third-party skill catalogue with literal install commands. That catalogue
 is stale — the project publishes 47 skills, not the 24 listed — and reproducing it is a copying
-vector. The corpus references the project by URL once and copies nothing.
+vector. No rule in the corpus needs that project, so the corpus does not name it at all; a check
+allows it only as a bare URL should a future rule need one.
 
 ### These claims checked out
 

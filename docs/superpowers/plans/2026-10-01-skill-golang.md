@@ -25,8 +25,9 @@ required hop — a rule's file is derivable from its area.
 
 ## Tech Stack
 
-Markdown. `node:test` for the maintenance checks, run with `node --test test/`. No `package.json`, no
-dependencies, no runtime code in the shipped skill. Go 1.25.11 locally for the example checks.
+Markdown. `node:test` for the maintenance checks, run with `node --test` from the repository root.
+No `package.json`, no dependencies, no runtime code in the shipped skill. Go 1.25.11 locally for the
+example checks.
 
 ## Global Constraints
 

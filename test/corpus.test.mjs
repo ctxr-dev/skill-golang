@@ -212,18 +212,21 @@ test('no third-party skill collection is copied or installed from', () => {
   }
 });
 
-test('the third-party collection is named once, as a bare URL', () => {
+test('the third-party collection is never named except as a bare URL', () => {
   const mentions = proseCorpus().flatMap(({ file, text }) =>
-    [...text.matchAll(/samber\/cc-skills-golang/g)].map(() => file),
+    [...text.matchAll(/samber\/cc-skills-golang/g)].map((match) => ({
+      file,
+      context: text.slice(Math.max(0, match.index - 'https://github.com/'.length), match.index + match[0].length),
+    })),
   );
-  assert.equal(mentions.length, 1, `expected one mention, found ${mentions.length}`);
-  const text = readFileSync(mentions[0], 'utf8');
-  const at = text.indexOf('samber/cc-skills-golang');
-  assert.equal(
-    text.slice(at - 'https://github.com/'.length, at + 'samber/cc-skills-golang'.length),
-    SAMBER_URL,
-    `${rel(mentions[0])}: the mention must be the bare URL ${SAMBER_URL}`,
+  const wrong = mentions.filter((mention) => mention.context !== SAMBER_URL);
+  assert.deepEqual(
+    wrong.map((mention) => `${rel(mention.file)}: ${mention.context}`),
+    [],
+    `${mentions.length} mentions found; each must be exactly ${SAMBER_URL}`,
   );
+  const control = proseCorpus().filter(({ text }) => text.includes('https://go.dev'));
+  assert.ok(control.length > 0, 'positive control: no file cites go.dev, so the matcher proves nothing');
 });
 
 test('no employer or unnamed-company wording appears anywhere', () => {
