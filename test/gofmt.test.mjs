@@ -80,7 +80,7 @@ test('every standard-library Go example on the 1.25 baseline compiles and vets c
   const built = [];
   try {
     writeFileSync(path.join(scratch, 'go.mod'), `module example\n\n${GO_LINE}\n`);
-    blocks.forEach((block, ordinal) => {
+    blocks.forEach((block) => {
       const source = asFile(block.code);
       if (block.since === '1.26') {
         gated.push(block.label);
@@ -91,10 +91,9 @@ test('every standard-library Go example on the 1.25 baseline compiles and vets c
         external.push(`${block.label} (${foreign.join(', ')})`);
         return;
       }
-      const dir = path.join(scratch, `b${String(ordinal).padStart(3, '0')}`);
+      const dir = path.join(scratch, `${block.area}__${block.ruleId}__${block.index}`);
       mkdirSync(dir);
       writeFileSync(path.join(dir, 'example.go'), source);
-      writeFileSync(path.join(dir, 'LABEL'), `${block.label}\n`);
       built.push(block.label);
     });
     assert.ok(built.length > 0, 'no example was compiled');
@@ -105,17 +104,13 @@ test('every standard-library Go example on the 1.25 baseline compiles and vets c
     } catch (error) {
       failure = String(error.stderr ?? error.message);
     }
-    const named = failure
-      .split('\n')
-      .filter((line) => /^b\d{3}\//.test(line) || /^\.\/b\d{3}/.test(line) || line.includes('/b'))
-      .join('\n');
     assert.equal(
       failure,
       '',
       [
         `compiled ${built.length}, 1.26-gated and unexecuted: ${gated.join(', ') || 'none'}`,
         `external-import and unexecuted: ${external.join(', ') || 'none'}`,
-        named || failure,
+        'each failing path is <area>__<rule-id>__<block-index>/example.go',
       ].join('\n'),
     );
   } finally {
