@@ -24,8 +24,21 @@ function tracked() {
     .filter((line) => line.length > 0);
 }
 
+function markdownIn(directory) {
+  return readdirSync(path.join(repoRoot, directory))
+    .filter((name) => name.endsWith('.md'))
+    .map((name) => `${directory}/${name}`);
+}
+
 function shippedPaths() {
-  return [...REQUIRED_FILES, ...areaFiles().map((file) => rel(file))];
+  return [
+    ...new Set([
+      ...REQUIRED_FILES,
+      ...markdownIn('references'),
+      ...markdownIn('rules'),
+      ...areaFiles().map((file) => rel(file)),
+    ]),
+  ];
 }
 
 test('every file the skill needs at runtime is in the repository', () => {
