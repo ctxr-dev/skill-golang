@@ -67,11 +67,13 @@ two false positives seen in the wild, and confirms neither comes back active.
 - atom_type: decision
 
 **Rule.** A standard the organisation already has beats this corpus, one topic at a time. Take the
-first match on this ladder, and only for the topic it covers: a rule already loaded in this session's
-context; a repository instruction file such as `AGENTS.md` or `CLAUDE.md`; a loaded skill that
-declares it supersedes Go guidance; a Go standards document in the repository, or its
-`.golangci.yml`. Every topic the organisation is silent on falls through to the corpus. Say which
-rung applied and to what.
+first match on this ladder, and only for the topic it covers: a direct instruction from the person
+asking for the work; a rule already loaded in this session's context; a repository instruction file
+such as `AGENTS.md` or `CLAUDE.md`; a loaded skill that declares it supersedes Go guidance; a Go
+standards document in the repository, or its `.golangci.yml`. Every topic nobody spoke on falls
+through to the corpus. Say which rung applied and to what. When a rung above the corpus made a rule
+impossible to meet, quote the instruction in the report and mark the finding waived rather than
+required; `rule:review-finding-contract` carries that disposition.
 
 **Why.** Per-topic resolution is what keeps the corpus useful next to a company style guide. A
 whole-corpus override discards eighty rules because the organisation wrote one. Rung 0 exists

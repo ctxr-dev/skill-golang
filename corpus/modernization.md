@@ -19,7 +19,9 @@ code people still write by hand.
 **Rule.** Write for Go 1.25 and Go 1.26. A rule that needs the newer release carries a `since: 1.26`
 marker and shows the form that compiles on 1.25 beside it, so every rule is usable on either. The
 `go` directive in `go.mod` decides which form compiles. Never gate a language feature on a runtime
-version check.
+version check. This window is the one the examples in this corpus target; it does not set your
+module's `go` directive. `rule:go-mod-hygiene` sets that, and its floor is the oldest release whose
+features the module needs, which may be older than either number here.
 
 **Why.** Two releases is the window the Go team supports, so a corpus pinned to one of them is wrong
 for half the people reading it. Putting the gate on the rule, as a `since` marker, keeps it visible

@@ -187,6 +187,9 @@ where it teaches something, what catches a violation, and its sources.
 
 [`references/corpus-index.md`](references/corpus-index.md) lists all 86 with their priority and the
 linter that catches each one.
+[`references/ecosystem-snapshot.md`](references/ecosystem-snapshot.md) holds the measured library
+table, kept out of the corpus so opening `corpus/dependencies.md` for any other rule does not load
+it.
 
 **Priority.** P0 governs on contradiction — 17 of them. P1 is a strong default. P2 is contextual.
 

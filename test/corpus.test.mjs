@@ -285,3 +285,18 @@ test('every pinned link matches the version this skill declares', () => {
   assert.ok(pinned > 0, 'no pinned link anywhere, so this check proves nothing');
   assert.deepEqual(wrong, [], `${pinned} pinned links checked against ${expected}`);
 });
+
+test('every file the shipped prose points at exists on disk', () => {
+  const dangling = [];
+  let pointers = 0;
+  for (const { file, text } of proseCorpus()) {
+    for (const match of text.matchAll(/`((?:corpus|references|rules)\/[\w.-]+\.(?:md|yml))`/g)) {
+      pointers += 1;
+      if (!existsSync(path.join(repoRoot, match[1]))) {
+        dangling.push(`${rel(file)}: ${match[1]}`);
+      }
+    }
+  }
+  assert.ok(pointers > 0, 'the prose points at no shipped file, so this check proves nothing');
+  assert.deepEqual(dangling, [], `${pointers} pointers checked`);
+});

@@ -59,8 +59,28 @@ One of:
 - **pass with required fixes** — list them
 - **do not merge** — list the blockers
 
+Count waived findings separately from fixed ones, so the two never read the same:
+*"do not merge: 2 blockers, 1 waived"*.
+
 Then, always, an explicit list of what was **not** reviewed: files skipped, generated code, vendored
 code, test fixtures, anything the diff touched that you did not open.
+
+## Disposition
+
+Each finding carries one:
+
+| Disposition | Meaning |
+|---|---|
+| open | Nobody has answered it |
+| fixed | The code changed |
+| waived | A rung above the corpus made it impossible, and the reviewer cannot overturn that |
+
+A waived finding keeps its real severity and adds two fields: **who waived it** and **the exact
+instruction**, quoted. "Six files, no more" is a waiver. "We will do it later" is not, and that one
+stays open.
+
+Without this, a required fix that will never be made and a finding that was answered look identical
+in the report, and a reader cannot tell which findings are still live.
 
 ## Where the report goes
 
@@ -76,7 +96,7 @@ request number, an issue key, or the request itself.
 | File | Always? | Holds |
 |---|---|---|
 | `report.md` | yes | The findings, the verdict, the not-reviewed list |
-| `findings.json` | when there is at least one finding | `severity`, `file`, `line`, `ruleId`, `url`, `problem`, `fix` |
+| `findings.json` | when there is at least one finding | `severity`, `disposition`, `file`, `line`, `ruleId`, `url`, `problem`, `fix`, and `waivedBy` plus `waiver` when waived |
 | `reviewed-files.txt` | when more than one file was read | One path per line |
 | `not-reviewed.md` | when anything was skipped | What was skipped and why |
 

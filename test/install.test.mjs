@@ -24,8 +24,21 @@ function tracked() {
     .filter((line) => line.length > 0);
 }
 
+function markdownIn(directory) {
+  return readdirSync(path.join(repoRoot, directory))
+    .filter((name) => name.endsWith('.md'))
+    .map((name) => `${directory}/${name}`);
+}
+
 function shippedPaths() {
-  return [...REQUIRED_FILES, ...areaFiles().map((file) => rel(file))];
+  return [
+    ...new Set([
+      ...REQUIRED_FILES,
+      ...markdownIn('references'),
+      ...markdownIn('rules'),
+      ...areaFiles().map((file) => rel(file)),
+    ]),
+  ];
 }
 
 test('every file the skill needs at runtime is in the repository', () => {
@@ -69,8 +82,10 @@ test('a tree copied the way the skills installer copies it still holds the corpu
     assert.deepEqual(missing, [], 'files lost in the copy');
     const corpusCount = readdirSync(path.join(target, 'corpus')).filter((name) => name.endsWith('.md')).length;
     assert.equal(corpusCount, 20, 'corpus files in the installed tree');
+    const inRepo = readdirSync(path.join(repoRoot, 'references')).filter((name) => name.endsWith('.md')).length;
     const referenceCount = readdirSync(path.join(target, 'references')).filter((name) => name.endsWith('.md')).length;
-    assert.equal(referenceCount, 4, 'reference files in the installed tree');
+    assert.ok(inRepo >= 4, `the repository carries ${inRepo} reference files, expected at least 4`);
+    assert.equal(referenceCount, inRepo, 'reference files lost between the repository and the installed tree');
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

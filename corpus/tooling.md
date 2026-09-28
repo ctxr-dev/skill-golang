@@ -22,7 +22,8 @@ exactly eleven linters: `bodyclose`, `contextcheck`, `cyclop`, `errcheck`, `funl
 this corpus, and `references/corpus-index.md` records which. A repository that already has its own
 config wins; this list is the starting point for a repository that has none. `fieldalignment` stays
 off, because it reorders struct fields for packing and fights
-`rule:struct-field-order-readability-first`.
+`rule:struct-field-order-readability-first`. `version: "2"` names the v2 config schema, so that file
+needs golangci-lint 2.0 or newer; a 1.x install needs the v1 form shown below instead.
 
 **Why.** `default: none` turns the list into a decision somebody made, instead of whatever the tool
 shipped with this month. The eleven are not a taste: each one reports a defect this corpus already
@@ -51,6 +52,39 @@ linters:
     - unused
 ```
 
+That file needs golangci-lint 2.0 or newer. `version` and `linters.default` are v2 keys, and a 1.x
+install rejects them rather than ignoring them: `golangci-lint config verify` exits 3 and names both.
+
+```text
+jsonschema: "linters" does not validate with "/properties/linters/additionalProperties": additional properties 'default' not allowed
+jsonschema: "" does not validate with "/additionalProperties": additional properties 'version' not allowed
+Failed executing command with error: the configuration contains invalid elements
+```
+
+**Good (golangci-lint 1.x)**
+
+The same eleven linters on the v1 schema: `disable-all: true` replaces `default: none`, and there is
+no `version` key. The settings block in `rule:size-gate-and-smells` moves as well, from
+`linters.settings` to a top-level `linters-settings` key. Upgrade when you can, because v2 is where
+the schema is documented, but this is the form a 1.x install accepts.
+
+```yaml
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - contextcheck
+    - cyclop
+    - errcheck
+    - funlen
+    - gocognit
+    - govet
+    - ineffassign
+    - revive
+    - staticcheck
+    - unused
+```
+
 **Bad**
 
 ```yaml
@@ -64,10 +98,11 @@ linters:
 ```
 
 **Caught by.** `golangci-lint config verify`, which checks the file against the published JSON
-schema and rejects a config that is not valid version 2. A missing config is caught by review
-instead, because `golangci-lint run` quietly falls back to its own defaults and reports nothing.
-This skill's own check reconciles the enabled list against the corpus index, so a linter enabled
-with no rule behind it is named and the check fails.
+schema the running tool implements. That makes it a version gate as much as a syntax check: the v2
+file above fails it on a 1.x install, with the error shown beside it. A missing config is caught by
+review instead, because `golangci-lint run` quietly falls back to its own defaults and reports
+nothing. This skill's own check reconciles the enabled list against the corpus index, so a linter
+enabled with no rule behind it is named and the check fails.
 
 **Sources.** https://golangci-lint.run/docs/configuration/file/ and
 https://golangci-lint.run/docs/linters/configuration/

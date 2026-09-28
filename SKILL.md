@@ -4,7 +4,7 @@ description: "Use whenever you write, change, or review Go. Writing: a new funct
 license: MIT
 compatibility: "Any agent or product that reads Markdown skills. Pure prose guidance, no runtime and no network on the common path. It reads the skills installer lockfile and rule directories to detect two companion skills, and writes under ~/.skill-golang/ only. Its own maintenance checks are zero-dependency node:test files and are not needed to use it. The companion always-on rule at rules/golang.md installs separately."
 metadata:
-  version: "1.1"
+  version: "1.2"
   homepage: "https://github.com/ctxr-dev/skill-golang"
   companion-rule: "rules/golang.md"
 ---
@@ -17,6 +17,11 @@ Knowledge lives in `corpus/<area>.md`. Each rule is one `##` section carrying it
 the reason, a worked example, what catches a violation, and its sources. Open the area you need. Do
 not read the corpus end to end.
 
+**Where these files are on disk.** The installer puts the whole tree at
+`~/.agents/skills/golang/`, or at `<project>/.agents/skills/golang/` for a project install. Use that
+root to grep the corpus. `references/companion-skills.md` has the rule for resolving it from the
+installer's lockfile.
+
 **This skill never overrides a standard the organisation already has.** It fills the gaps.
 
 ## Precedence
@@ -26,13 +31,22 @@ through to the corpus.
 
 | Rung | Signal |
 |---|---|
-| 0 | A rule already loaded in this session's context |
-| 1 | A repository instruction file: `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.github/copilot-instructions.md` |
-| 2 | A loaded skill that declares it supersedes Go guidance |
-| 3 | A Go standards document in the repository, or its `.golangci.yml` |
-| 4 | This corpus |
+| 0 | A direct instruction from the person asking for the work |
+| 1 | A rule already loaded in this session's context |
+| 2 | A repository instruction file: `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.github/copilot-instructions.md` |
+| 3 | A loaded skill that declares it supersedes Go guidance |
+| 4 | A Go standards document in the repository, or its `.golangci.yml` |
+| 5 | This corpus |
 
-Rung 0 exists because an always-on rule injected into your context is invisible to a directory scan.
+Rung 0 is the person in the conversation. "Six files, no more" or "skip the linter config this time"
+outranks everything below, for the topic it names and nothing else. Quote the instruction in any
+report that a rule went unmet because of it.
+
+Rung 1 exists because an always-on rule injected into your context is invisible to a directory scan.
+
+**One exception runs the other way.** `corpus/docs.md#godoc-required-on-exported` overrides a loaded
+`no-comments` rule for doc comments on exported names and packages, and for nothing else. That rule
+is written as a declared exception to that companion, so a rung-1 comment ban does not take it.
 
 Say which rung applied and to what. "Field ordering follows `AGENTS.md`; everything else in this file
 follows the corpus" is the shape. Never discard the corpus because the organisation wrote one rule.
@@ -251,3 +265,7 @@ not compiled; they were checked against the Go 1.26 release notes by hand, and e
 Any language other than Go. CI platform configuration beyond naming the commands to run. Deployment,
 container images and orchestration. Product decisions. Where a repository has its own Go standard,
 that standard wins on its own topics — see the precedence table.
+
+**The non-Go files a Go change ships** — a `compose.yaml`, a Dockerfile, a CI workflow — get no
+guidance from this corpus. The companions still reach them, because neither is about Go: apply
+`no-comments` and `simple-language` to every file in the change, not only the `.go` ones.

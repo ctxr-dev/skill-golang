@@ -15,6 +15,12 @@ Homes: `https://github.com/ctxr-dev/no-comments` and `https://github.com/ctxr-de
 Four states per companion: **active**, **skill-only**, **rule-only**, **absent**. Run these steps in
 order.
 
+0. **Is the rule already in your context?** If the companion's rule text is in this session's
+   context window, it binds you whatever the filesystem says. Record the state as **rule-only**, or
+   **active** if you also see the skill body, set `evidence.source` to `"session-context"`, and skip
+   steps 1 to 3 entirely. This is the common case and it costs nothing; the probes below exist to
+   answer the question when the context cannot.
+
 1. **Read the installer's lockfile.** Two exist, and either can be the only one present. Read both,
    preferring the project file when a companion appears in both.
 

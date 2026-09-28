@@ -19,9 +19,12 @@ and the link that lets the author check the rule for themselves.
 **Rule.** Every finding carries five fields, in this order: severity, the file and the line inside
 it, a link to the rule, what is wrong, and the fix. The severity ladder has four rungs. **blocker** —
 a defect ships, or a P0 rule is broken. **major** — a P1 rule is broken. **minor** — a P2 rule is
-broken. **nit** — a style preference with no rule behind it, and the word nit is written on it. Close
-the report with one verdict — pass, pass with required fixes, or do not merge — and then an explicit
-list of what you did not review.
+broken. **nit** — a style preference with no rule behind it, and the word nit is written on it. Each
+finding also carries a disposition: **open**, **fixed**, or **waived** when a rung above the corpus
+made it impossible and you cannot overturn that. A waived finding keeps its severity, names who
+waived it, and quotes the instruction. Close the report with one verdict — pass, pass with required
+fixes, or do not merge — counting waived findings separately, and then an explicit list of what you
+did not review.
 
 **Why.** An author acts on a finding or ignores it, and the five fields are what make acting
 possible: where to look, why it matters, and what to type instead. Drop the fix and the author has to
@@ -40,12 +43,12 @@ under a reader every time a rule is edited.
 <severity> · <path>:<line> · <rule link> · <what is wrong> · <the fix>
 
 blocker · internal/billing/store.go:<line> ·
-  https://github.com/ctxr-dev/skill-golang/blob/v1.1/corpus/security.md#parameterized-sql ·
+  https://github.com/ctxr-dev/skill-golang/blob/v1.2/corpus/security.md#parameterized-sql ·
   the customer filter is concatenated into the SQL string, so a quote in a customer name changes the query ·
   pass the filter as a bind parameter to QueryContext and leave the statement a constant
 
 minor · internal/billing/store.go:<line> ·
-  https://github.com/ctxr-dev/skill-golang/blob/v1.1/corpus/style.md#left-aligned-happy-path ·
+  https://github.com/ctxr-dev/skill-golang/blob/v1.2/corpus/style.md#left-aligned-happy-path ·
   the success path is nested three deep inside error checks ·
   return early on each error and leave the success path at the left margin
 
@@ -141,7 +144,7 @@ and saying which is which is what buys the author's trust in the rest of the rep
 
 ```text
 major · internal/api/client.go:<line> ·
-  https://github.com/ctxr-dev/skill-golang/blob/v1.1/corpus/api.md#http-client-is-stateless ·
+  https://github.com/ctxr-dev/skill-golang/blob/v1.2/corpus/api.md#http-client-is-stateless ·
   a new http.Client is built inside each request, so no connection is ever reused ·
   build one client at startup and pass it to the handler
 

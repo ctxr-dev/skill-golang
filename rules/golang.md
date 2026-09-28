@@ -6,10 +6,11 @@ Loads in every session. It routes; it holds no Go knowledge of its own.
 
 ## Precedence, first match wins, per topic
 
-0. A rule already loaded in this session's context.
-1. A repository instruction file: `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.github/copilot-instructions.md`.
-2. A loaded skill that declares it supersedes Go guidance.
-3. A Go standards document in the repository, or its `.golangci.yml`.
+0. A direct instruction from the person asking for the work.
+1. A rule already loaded in this session's context.
+2. A repository instruction file: `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.github/copilot-instructions.md`.
+3. A loaded skill that declares it supersedes Go guidance.
+4. A Go standards document in the repository, or its `.golangci.yml`.
 
 A topic nothing above covers falls through to the corpus. Say which rung applied, and to what.
 

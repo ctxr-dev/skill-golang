@@ -95,14 +95,20 @@ https://google.github.io/styleguide/go/decisions#useful-test-failures
 - atom_type: feedback-rule
 
 **Rule.** Put the cases in a slice of structs with named fields, run each case inside
-`t.Run(tt.name, ...)`, and share one assertion shape across every case. Go 1.22 gave `for` loops a
-fresh variable per iteration, so the old `tt := tt` copy at the top of the loop is obsolete and must
-never appear in new code.
+`t.Run(tt.name, ...)`, and share one assertion shape across every case. Each iteration gets its own
+loop variable when the `go` directive in `go.mod` is 1.22 or higher, so there the old `tt := tt` copy
+at the top of the loop is obsolete and must never appear in new code. Below that directive every
+iteration shares one variable: capture each case explicitly in the loop body, or raise the
+directive. The installed toolchain does not decide this; the directive does. See
+`rule:go-mod-hygiene`.
 
 **Why.** `t.Run` gives each case its own name, so a failure says which case broke and `go test -run`
 reruns that one case alone. Named struct fields say what each column means, so adding a case is one
 line and nobody counts positional values. One assertion shape means a reader checks the comparison
-once instead of once per case, and a new case cannot quietly assert something weaker.
+once instead of once per case, and a new case cannot quietly assert something weaker. The directive
+is worth naming because getting it wrong is silent: a module left at `go 1.21` on a Go 1.25
+toolchain shares one `tt` across the whole loop, so a closure that reads it after the loop moved on
+asserts the last row and a missing behaviour passes.
 
 **Good**
 
@@ -165,12 +171,15 @@ func TestClamp(t *testing.T) {
 }
 ```
 
-**Caught by.** Review, and the symptoms are concrete. The failure reports values with no case name.
+**Caught by.** `go vet`, which reports `loop variable tt captured by func literal` and exits
+non-zero when a closure captures the loop variable under a directive below 1.22. Review catches the
+rest, and the symptoms are concrete. The failure reports values with no case name.
 `go test -run TestClamp/above_the_ceiling` matches nothing, because no subtest exists to address.
 `t.Fatalf` inside the loop stops the whole table, so three broken cases report as one failure.
 
 **Sources.** https://go.dev/blog/subtests , https://go.dev/wiki/TableDrivenTests ,
-https://google.github.io/styleguide/go/decisions#table-driven-tests and https://go.dev/doc/go1.22
+https://google.github.io/styleguide/go/decisions#table-driven-tests , https://go.dev/doc/go1.22 and
+https://go.dev/wiki/LoopvarExperiment
 
 ## parallel-when-safe
 
@@ -180,13 +189,18 @@ https://google.github.io/styleguide/go/decisions#table-driven-tests and https://
 **Rule.** Call `t.Parallel()` only when the test shares no mutable state with any other test and
 calls neither `t.Setenv` nor `t.Chdir`. Both change the whole process, and the testing package
 panics when a parallel test or a child of one calls either. A parallel subtest that closes over the
-loop variable is safe since Go 1.22, because each iteration gets its own variable.
+loop variable is safe when the `go` directive in `go.mod` is 1.22 or higher, because each iteration
+then gets its own variable. Below that directive every iteration shares one variable, so each
+parallel subtest reads whatever the loop left behind: capture each case explicitly in the loop body,
+or raise the directive. See `rule:go-mod-hygiene`.
 
 **Why.** Parallel tests cut wall-clock time, and they turn every piece of shared state into a race:
 a package-level variable, a fixed TCP port, a temp path two tests both compute, an environment
 variable. The `t.Setenv` ban is not a style preference. The testing package aborts the run with
 `testing: test using t.Setenv or t.Chdir can not use t.Parallel`, so the combination is a crash, not
-a slow leak.
+a slow leak. The loop-variable case fails in the opposite direction, quietly: under a directive
+below 1.22 every parallel subtest asserts the same last row, so the suite goes green over a
+behaviour nobody tested.
 
 **Good**
 
@@ -244,10 +258,13 @@ func TestRegion(t *testing.T) {
 
 **Caught by.** `go test` catches the `t.Setenv` case the first time it runs, panicking with
 `testing: test using t.Setenv or t.Chdir can not use t.Parallel`. `go test -race` catches shared
-memory between parallel tests. Neither finds a fixed port or a shared temp path that only collides
-on a busy machine, so review also checks what each parallel test writes to.
+memory between parallel tests. `go vet` catches the loop variable, reporting `loop variable tt
+captured by func literal` and exiting non-zero whenever the directive is below 1.22. None of the
+three finds a fixed port or a shared temp path that only collides on a busy machine, so review also
+checks what each parallel test writes to.
 
-**Sources.** https://pkg.go.dev/testing#T.Parallel , https://pkg.go.dev/testing#T.Setenv and
+**Sources.** https://pkg.go.dev/testing#T.Parallel , https://pkg.go.dev/testing#T.Setenv ,
+https://go.dev/wiki/LoopvarExperiment and
 https://github.com/uber-go/guide/blob/master/style.md#parallel-tests
 
 ## test-doubles-fake-or-mock

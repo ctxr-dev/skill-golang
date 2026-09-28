@@ -81,8 +81,9 @@ func watchJobs(jobs <-chan string) {
 ```
 
 **Caught by.** Review. The reviewer looks for `panic` anywhere other than package-level
-initialisation, and for a `go func()` whose body can panic with no `recover`. No linter in the
-baseline set reports either, so this is one of the rules a human has to hold.
+initialisation or the start-up path of `main`, before the process serves traffic, and for a
+`go func()` whose body can panic with no `recover`. No linter in the baseline set reports either, so
+this is one of the rules a human has to hold.
 
 **Sources.** https://go.dev/doc/effective_go and https://google.github.io/styleguide/go/best-practices
 
