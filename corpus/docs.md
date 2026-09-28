@@ -18,10 +18,13 @@ banned, and these rules say which is which and how the required one is written.
 
 **Rule.** Write a doc comment on every exported name and on every package. go.dev/doc/comment puts
 it plainly: "Every exported (capitalized) name should have a doc comment." Unexported names stay
-bare. This is a deliberate, written exception to the companion `no-comments` skill, whose own text
-bans doc blocks in every language and names Go doc comments among them. The exception covers doc
-comments on exported names and on packages, and nothing else — `rule:no-other-comments` still bans
-the rest.
+bare. A capitalised method on an unexported type is not reachable by an importer, so it owes no doc
+comment either, which is what `revive`'s `exported` rule implements. In `package main` no name is
+importable at all, so only the package comment is required, and `revive`'s `package-comments` still
+demands that one. This is a deliberate, written exception to the companion `no-comments` skill,
+whose own text bans doc blocks in every language and names Go doc comments among them. The
+exception covers doc comments on exported names and on packages, and nothing else —
+`rule:no-other-comments` still bans the rest.
 
 **Why.** A Go doc comment is not prose sitting next to the code. `go/doc` parses it, `gopls` shows
 it on hover, and pkg.go.dev publishes it as the package's documentation. That makes it API surface:
@@ -91,7 +94,9 @@ func (l *Ledger) Balance() int64 {
 ```
 
 **Caught by.** `revive`, with its `exported` and `package-comments` rules enabled. `exported` flags
-an exported name with no doc comment; `package-comments` flags a package with none.
+an exported name with no doc comment and stays silent on a capitalised method whose receiver type is
+unexported. It does not special-case `package main`: a capitalised name on an exported type there is
+still reported, so unexport it or write the comment. `package-comments` flags a package with none.
 
 **Sources.** https://go.dev/doc/comment , https://google.github.io/styleguide/go/decisions and
 https://github.com/ctxr-dev/no-comments

@@ -69,8 +69,10 @@ test('a tree copied the way the skills installer copies it still holds the corpu
     assert.deepEqual(missing, [], 'files lost in the copy');
     const corpusCount = readdirSync(path.join(target, 'corpus')).filter((name) => name.endsWith('.md')).length;
     assert.equal(corpusCount, 20, 'corpus files in the installed tree');
+    const inRepo = readdirSync(path.join(repoRoot, 'references')).filter((name) => name.endsWith('.md')).length;
     const referenceCount = readdirSync(path.join(target, 'references')).filter((name) => name.endsWith('.md')).length;
-    assert.equal(referenceCount, 4, 'reference files in the installed tree');
+    assert.ok(inRepo >= 4, `the repository carries ${inRepo} reference files, expected at least 4`);
+    assert.equal(referenceCount, inRepo, 'reference files lost between the repository and the installed tree');
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

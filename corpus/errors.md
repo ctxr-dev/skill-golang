@@ -18,12 +18,23 @@ or reads a field out of it, and what the message looks like after three layers h
 
 **Rule.** Handle an error once. Either wrap it with `fmt.Errorf("doing thing: %w", err)` and return
 it, or log it and stop there. Never do both in one call frame. Never write `_ = fn()` to silence an
-error you would rather not deal with.
+error you would rather not deal with. There is a third move, and only one: where a third party fixes
+the signature so it cannot return an error, and the error provably cannot arise, assign the result to
+blanks and prove the impossibility in the review or in a test. That ban is about an error you decided
+not to handle; it was never about an error that cannot happen.
 
 **Why.** Logging and returning means every layer above you logs the same failure again, so one
 broken file read becomes five log lines that read as five incidents. Only the caller knows whether
 the failure is worth reporting, so hand it the error and let it decide. Silencing with `_ =` is the
 same bug with the volume at zero: the failure still happened, and now nobody will ever learn it did.
+
+The first two moves both assume you have somewhere to put the error. A callback whose signature a
+third-party interface fixes returns nothing, so wrapping is not available, and logging then costs a
+logger field, a constructor argument and about seven lines to report a branch that cannot run.
+`bytes.Buffer.Write` never returns a non-nil error — it panics if the buffer outgrows memory — so an
+`if err != nil` on it is dead code that every later reader still has to work through. Assigning to
+blanks says the return was read and dismissed on purpose. The proof then belongs where someone can
+disagree with it: the review, or a test that fails the day the error becomes reachable.
 
 **Good**
 
@@ -39,6 +50,35 @@ func readConfig(path string) ([]byte, error) {
 		return nil, fmt.Errorf("read config %s: %w", path, err)
 	}
 	return data, nil
+}
+```
+
+**Good (impossible error)**
+
+`render` owns the buffer it passes in, so the only error `Format` could ever see is the one
+`bytes.Buffer` never returns. The signature comes from `formatter` and has no error to return.
+
+```go
+import "bytes"
+
+type formatter interface {
+	Format(out *bytes.Buffer)
+}
+
+type header struct {
+	title string
+}
+
+var _ formatter = header{}
+
+func (h header) Format(out *bytes.Buffer) {
+	_, _ = out.Write([]byte(h.title))
+}
+
+func render(f formatter) string {
+	var out bytes.Buffer
+	f.Format(&out)
+	return out.String()
 }
 ```
 
@@ -65,9 +105,14 @@ func removeConfig(path string) {
 }
 ```
 
-**Caught by.** `errcheck` reports a returned error nobody checks, and reports `_ = fn()` as well
-once its `check-blank` option is on. The doubled handling is a review check: the reviewer looks for
-a call frame that both writes a log line and returns an error for the same failure.
+**Caught by.** `errcheck`, and its exact reach matters here. It reports an error return dropped
+outright, such as `w.Write(p)` on a writer type it does not exclude, or a bare `mayFail()`. Under
+the baseline in `rule:golangci-lint-baseline` it reports neither `_, _ = w.Write(p)` nor
+`_ = mayFail()`, because that config leaves errcheck's `check-blank` option off; turn `check-blank`
+on and both blank forms are reported as well. Its shipped exclusions also cover
+`(*bytes.Buffer).Write` and the `fmt` print family, so even a bare call to one of those passes. The
+rest is a review check: the reviewer looks for a call frame that both writes a log line and returns
+an error for the same failure, and for a blank assignment whose impossibility nobody proved.
 
 **Sources.** https://go.dev/blog/go1.13-errors and https://github.com/uber-go/guide/blob/master/style.md
 

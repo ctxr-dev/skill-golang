@@ -222,8 +222,10 @@ https://google.github.io/styleguide/go/decisions#package-vs-exported-symbol-name
 - atom_type: feedback-rule
 
 **Rule.** Give a receiver one or two letters drawn from its type, and use the same letters on every
-method of that type. Never `this` or `self`. Let a variable's name grow with its scope: one letter
-inside a short loop, a word at function scope, a phrase for a package-level name.
+method of that type. A method that never reads its receiver may omit the name entirely, which is
+what the standard library does; the consistency requirement covers the methods that do name one.
+Never `this` or `self`. Let a variable's name grow with its scope: one letter inside a short loop, a
+word at function scope, a phrase for a package-level name.
 
 **Why.** A receiver is the most repeated name in a type's methods, so it earns the shortest form that
 still points at the type; `this` and `self` point at nothing and come from languages where the
@@ -251,6 +253,11 @@ func (l *Ledger) Add(amount int) {
 // Owner returns the name the ledger is held in.
 func (l *Ledger) Owner() string {
 	return strings.TrimSpace(l.owner)
+}
+
+// Kind returns the kind of account every ledger records against.
+func (*Ledger) Kind() string {
+	return "account"
 }
 
 func totalOf(entries []int) int {
