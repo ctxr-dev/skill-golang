@@ -132,6 +132,7 @@ test('every standard-library Go example compiles, and every good one vets clean'
       'each failing path is <area>__<rule-id>__<block-index>/example.go',
     ].join('\n');
     assert.equal(run('go', ['build', './...'], scratch), '', context);
+    assert.ok(vetted.length > 0, 'no good example was vetted');
     assert.equal(run('go', ['vet', ...vetted], scratch), '', context);
   } finally {
     rmSync(scratch, { recursive: true, force: true });

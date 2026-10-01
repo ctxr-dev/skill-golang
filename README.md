@@ -1,5 +1,7 @@
 # Go
 
+<img width="220" alt="Go routines" src="assets/images/golangroutines.png" />
+
 **An Agent Skill that makes your coding agent write Go like someone who has shipped it, and review Go like someone who has been paged at 3am.**
 
 Named rules. Worked examples. Every rule traceable to a primary source.

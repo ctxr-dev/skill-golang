@@ -17,11 +17,12 @@ and which of the two modes it is in.
 - atom_type: decision
 
 **Rule.** Once per repository, detect the two companion skills, then carry on whatever the result.
-Read `~/.agents/.skill-lock.json`, resolve the `skillPath` it names and confirm that `SKILL.md` is
-non-empty, then probe every rule location and require a non-empty body below the frontmatter. Report
-**active**, **skill-only**, **rule-only** or **absent**. The full procedure, with the path-resolution
-forms and the per-location file names, is in `references/companion-skills.md`. Neither companion
-blocks any work.
+Read the installer's lockfile — `<repo>/skills-lock.json` and `~/.agents/.skill-lock.json`, either
+of which can be the only one present — resolve the `skillPath` it names and confirm that `SKILL.md`
+is non-empty, then probe every rule location and require a non-empty body below the frontmatter.
+Report **active**, **skill-only**, **rule-only** or **absent**. The full procedure, with the
+path-resolution shapes and the per-location file names, is in `references/companion-skills.md`.
+Neither companion blocks any work.
 
 **Why.** A directory existing proves nothing. The documented rule install is a shell redirect that
 truncates the destination before `curl` writes to it, and `curl -f` prints nothing on an HTTP error,

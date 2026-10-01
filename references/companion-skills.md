@@ -15,16 +15,38 @@ Homes: `https://github.com/ctxr-dev/no-comments` and `https://github.com/ctxr-de
 Four states per companion: **active**, **skill-only**, **rule-only**, **absent**. Run these steps in
 order.
 
-1. **Read `~/.agents/.skill-lock.json`.** It is the installer's own record. Each entry holds
-   `source`, `sourceType`, `sourceUrl`, `skillPath`, `skillFolderHash`, `installedAt` and
-   `updatedAt`. No entry for the companion means the skills CLI did not install it.
-2. **Open the skill.** Resolve `skillPath` three ways, because installers write it three ways:
-   - relative (`SKILL.md`) → resolve against `~/.agents/skills/<name>/`
-   - absolute and naming a file → use it as it stands
-   - absolute and naming a directory → append `SKILL.md`
+1. **Read the installer's lockfile.** Two exist, and either can be the only one present. Read both,
+   preferring the project file when a companion appears in both.
 
-   With no lockfile entry, try `~/.agents/skills/<name>/SKILL.md` directly. The file must exist and
-   be non-empty. A path that resolves to nothing is no skill body, whatever the lockfile said.
+   | File | Written when |
+   |---|---|
+   | `<repo>/skills-lock.json` | the skill was installed into this project |
+   | `~/.agents/.skill-lock.json` | the skill was installed for the user |
+
+   Both hold `version` and a `skills` map keyed by skill name. Entry fields **vary by installer
+   version**: a freshly-written entry carries `source`, `sourceType`, `skillPath` and
+   `computedHash`, while a long-lived user lockfile also carries `sourceUrl`, `skillFolderHash`,
+   `installedAt` and `updatedAt`. Treat every field as optional — the lockfile answers *was this
+   installed, and from where*, not *where is the file*. No entry in either file means the skills CLI
+   did not install it.
+2. **Open the skill where the installer puts it**, which is always:
+
+   ```
+   <root>/skills/<name>/SKILL.md
+   ```
+
+   `<root>` is `~/.agents` for the user lockfile, and the directory holding `skills-lock.json` for a
+   project one. When the lockfile key is a display name rather than a slug, lower-case it and
+   collapse every run of non-alphanumeric characters to a single hyphen.
+
+   **Do not join `skillPath` to a root.** It records the path *inside the source repository*, not
+   where the file landed: a skill published at `stdlib/languages/scala-expert/SKILL.md` installs to
+   `skills/scala-expert/SKILL.md`. Measured against a 95-entry lockfile, the rule above resolved 93;
+   joining `skillPath` to the root resolved 50.
+
+   The file must exist and be non-empty. A lockfile entry whose file is gone is a **stale entry**,
+   left by an uninstall — report no skill body, whatever the lockfile said. Two of those 95 entries
+   were stale.
 3. **Look for the rule.** Probe every location below, in this order, and keep looking after the
    first hit — several can hold a live rule, and their text can differ.
 
