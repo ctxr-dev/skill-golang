@@ -266,3 +266,22 @@ test('the corpus is complete', () => {
 test('the repository ships no package manifest', () => {
   assert.equal(existsSync(path.join(repoRoot, 'package.json')), false, 'package.json must not exist');
 });
+
+test('every pinned link matches the version this skill declares', () => {
+  const skill = readFileSync(path.join(repoRoot, 'SKILL.md'), 'utf8');
+  const declared = /^\s+version:\s*"([^"]+)"$/m.exec(skill);
+  assert.ok(declared !== null, 'SKILL.md declares no metadata.version');
+  const expected = `v${declared[1]}`;
+  const wrong = [];
+  let pinned = 0;
+  for (const { file, text } of proseCorpus()) {
+    for (const match of text.matchAll(/\/blob\/(v[\d.]+)\//g)) {
+      pinned += 1;
+      if (match[1] !== expected) {
+        wrong.push(`${rel(file)}: ${match[1]}, expected ${expected}`);
+      }
+    }
+  }
+  assert.ok(pinned > 0, 'no pinned link anywhere, so this check proves nothing');
+  assert.deepEqual(wrong, [], `${pinned} pinned links checked against ${expected}`);
+});

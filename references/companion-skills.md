@@ -20,7 +20,7 @@ order.
 
    | File | Written when |
    |---|---|
-   | `<repo>/skills-lock.json` | the skill was installed into this project |
+   | `<dir>/skills-lock.json` | the skill was installed into a project; `<dir>` is where `skills add` was run |
    | `~/.agents/.skill-lock.json` | the skill was installed for the user |
 
    Both hold `version` and a `skills` map keyed by skill name. Entry fields **vary by installer
@@ -35,9 +35,19 @@ order.
    <root>/skills/<name>/SKILL.md
    ```
 
-   `<root>` is `~/.agents` for the user lockfile, and the directory holding `skills-lock.json` for a
-   project one. When the lockfile key is a display name rather than a slug, lower-case it and
-   collapse every run of non-alphanumeric characters to a single hyphen.
+   `<root>` differs between the two, and the project case is not the obvious one:
+
+   | Lockfile | `<root>` |
+   |---|---|
+   | `~/.agents/.skill-lock.json` | `~/.agents` — the lockfile sits *inside* the root |
+   | `<dir>/skills-lock.json` | `<dir>/.agents` — the lockfile sits *beside* the root |
+
+   Measured by installing into a directory that was not the home directory: the lockfile landed at
+   `<dir>/skills-lock.json` and the skill at `<dir>/.agents/skills/<name>/SKILL.md`, with nothing
+   written under the home directory at all. Probing `<dir>/skills/<name>/` finds nothing.
+
+   When the lockfile key is a display name rather than a slug, lower-case it and collapse every run
+   of non-alphanumeric characters to a single hyphen.
 
    **Do not join `skillPath` to a root.** It records the path *inside the source repository*, not
    where the file landed: a skill published at `stdlib/languages/scala-expert/SKILL.md` installs to
@@ -57,7 +67,7 @@ order.
    | `~/.agents/rules/` | `<name>.md` |
    | `<repo>/.cursor/rules/` | `<name>.mdc` |
    | `<repo>/.windsurf/rules/` | `<name>.md` |
-   | `~/.agents/skills/<name>/rules/` | `<name>.md` |
+   | `<root>/skills/<name>/rules/` | `<name>.md` |
 
    A hit needs a **non-empty body below the frontmatter**. Frontmatter alone is not a rule. Record
    every hit in `evidence.ruleHits`, with its byte count; the first one is the one you name in

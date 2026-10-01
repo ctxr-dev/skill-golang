@@ -40,12 +40,12 @@ under a reader every time a rule is edited.
 <severity> · <path>:<line> · <rule link> · <what is wrong> · <the fix>
 
 blocker · internal/billing/store.go:<line> ·
-  https://github.com/ctxr-dev/skill-golang/blob/v1.0/corpus/security.md#parameterized-sql ·
+  https://github.com/ctxr-dev/skill-golang/blob/v1.1/corpus/security.md#parameterized-sql ·
   the customer filter is concatenated into the SQL string, so a quote in a customer name changes the query ·
   pass the filter as a bind parameter to QueryContext and leave the statement a constant
 
 minor · internal/billing/store.go:<line> ·
-  https://github.com/ctxr-dev/skill-golang/blob/v1.0/corpus/style.md#left-aligned-happy-path ·
+  https://github.com/ctxr-dev/skill-golang/blob/v1.1/corpus/style.md#left-aligned-happy-path ·
   the success path is nested three deep inside error checks ·
   return early on each error and leave the success path at the left margin
 
@@ -141,7 +141,7 @@ and saying which is which is what buys the author's trust in the rest of the rep
 
 ```text
 major · internal/api/client.go:<line> ·
-  https://github.com/ctxr-dev/skill-golang/blob/v1.0/corpus/api.md#http-client-is-stateless ·
+  https://github.com/ctxr-dev/skill-golang/blob/v1.1/corpus/api.md#http-client-is-stateless ·
   a new http.Client is built inside each request, so no connection is ever reused ·
   build one client at startup and pass it to the handler
 

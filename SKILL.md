@@ -4,7 +4,7 @@ description: "Use whenever you write, change, or review Go. Writing: a new funct
 license: MIT
 compatibility: "Any agent or product that reads Markdown skills. Pure prose guidance, no runtime and no network on the common path. It reads the skills installer lockfile and rule directories to detect two companion skills, and writes under ~/.skill-golang/ only. Its own maintenance checks are zero-dependency node:test files and are not needed to use it. The companion always-on rule at rules/golang.md installs separately."
 metadata:
-  version: "1.0"
+  version: "1.1"
   homepage: "https://github.com/ctxr-dev/skill-golang"
   companion-rule: "rules/golang.md"
 ---
